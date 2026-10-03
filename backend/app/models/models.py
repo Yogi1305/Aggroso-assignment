@@ -78,8 +78,10 @@ class Claim(Base):
     currency = Column(String, default="USD", nullable=False)
     description = Column(Text, nullable=False)
     receipt_available = Column(Boolean, default=False, nullable=False) # True for 'yes', False for 'no'
+    receipt_path = Column(String, nullable=True) # Storage path for uploaded receipt file
     
     status = Column(String, default=ClaimStatus.PENDING_REVIEW.value)
+
     
     # AI and Validation output caches
     is_evaluated = Column(Boolean, default=False)

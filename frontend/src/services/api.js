@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -48,12 +49,16 @@ export const claimsAPI = {
   getClaims: (params) => api.get('/claims', { params }),
   getClaimById: (id) => api.get(`/claims/${id}`),
   createClaim: (data) => api.post('/claims', data),
+  uploadReceipt: (formData) => api.post('/claims/upload-receipt', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   createBatchClaims: (claims) => api.post('/claims/batch', { claims }),
   getTotals: () => api.get('/claims/summary/totals'),
   evaluateClaim: (id) => api.post(`/claims/${id}/evaluate`),
   recordDecision: (id, decision) => api.post(`/claims/${id}/decision`, decision),
   getClaimHistory: (id) => api.get(`/claims/${id}/history`),
 };
+
 
 export const policiesAPI = {
   getPolicies: () => api.get('/policies'),

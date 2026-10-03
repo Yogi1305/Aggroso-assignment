@@ -14,6 +14,8 @@ def setup_db():
     db.query(ReviewDecision).delete()
     db.query(Claim).delete()
     db.query(PolicyRule).delete()
+    from app.models.models import RoleRequest
+    db.query(RoleRequest).delete()
     db.query(User).delete()
     db.commit()
 
@@ -35,7 +37,7 @@ def setup_db():
 
 
 def get_auth_headers(role="reviewer"):
-    # Register test user
+    db = SessionLocal()
     email = f"test_{role}@example.com"
     client.post("/api/auth/register", json={
         "name": f"Test {role}",
@@ -43,9 +45,17 @@ def get_auth_headers(role="reviewer"):
         "password": "password123",
         "role": role
     })
+    # Update role directly in db if elevated role required for testing
+    user_db = db.query(User).filter(User.email == email).first()
+    if user_db and role != "user":
+        user_db.role = role
+        db.commit()
+    db.close()
+
     login_resp = client.post("/api/auth/login", json={"email": email, "password": "password123"})
     token = login_resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
 
 def test_create_and_evaluate_claim():
     headers = get_auth_headers("user")

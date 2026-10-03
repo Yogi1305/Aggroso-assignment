@@ -1,19 +1,44 @@
 from app.database import Base, engine, SessionLocal
-from app.models.models import PolicyRule, Claim, ClaimStatus
+from app.models.models import PolicyRule, Claim, ClaimStatus, User, RoleRequest
 from app.services.deterministic_validator import DeterministicValidator
 from app.services.ai_policy_engine import AIPolicyEngine
+import bcrypt
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8')[:72], bcrypt.gensalt()).decode('utf-8')
 
 def seed_database():
+    import logging
+    logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
+
+    print("Dropping existing tables and recreating schema...")
+    # Drop all schemas to start fresh (useful when schema changes, e.g. receipt_path added)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    
     db = SessionLocal()
 
-    # Clear existing
-    from app.models.models import ClaimValidationResult, ReviewDecision
-    db.query(ClaimValidationResult).delete()
-    db.query(ReviewDecision).delete()
-    db.query(Claim).delete()
-    db.query(PolicyRule).delete()
+    # ─── Default Test Accounts ───────────────────────────────────
+    print("Seeding default test accounts...")
+    admin_user = User(
+        name="Admin User",
+        email="admin@test.com",
+        contact="+1-555-0100",
+        role="admin",
+        hashed_password=hash_password("admin123")
+    )
+    employee_user = User(
+        name="John Doe",
+        email="user@test.com",
+        contact="+1-555-0200",
+        role="user",
+        hashed_password=hash_password("user123")
+    )
+    db.add_all([admin_user, employee_user])
     db.commit()
+    print("  ✓ Admin  → admin@test.com / admin123")
+    print("  ✓ User   → user@test.com  / user123")
+
 
     print("Seeding Policy Rules...")
     policies = [

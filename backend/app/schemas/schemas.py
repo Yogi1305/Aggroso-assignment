@@ -81,6 +81,7 @@ class ClaimCreate(BaseModel):
     currency: str = Field(default="USD", example="USD")
     description: str = Field(..., example="Dinner with client during regional sales trip")
     receipt_available: bool = Field(default=True)
+    receipt_path: Optional[str] = None
 
 class ClaimBatchCreate(BaseModel):
     claims: List[ClaimCreate]
@@ -139,6 +140,7 @@ class ClaimResponse(BaseModel):
     currency: str
     description: str
     receipt_available: bool
+    receipt_path: Optional[str] = None
     status: str
     is_evaluated: bool
     created_at: datetime
@@ -147,6 +149,7 @@ class ClaimResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 # Batch Aggregation Schema
 class ClaimTotalsResponse(BaseModel):

@@ -1,26 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { claimsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { PlusCircle, Layers, Send, Check, Trash2, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Layers, Send, Check, Trash2, ArrowLeft, RefreshCw } from 'lucide-react';
 
 export const SubmitClaim = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const reclaimData = location.state?.reclaimClaim;
+
   const [activeTab, setActiveTab] = useState('single');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   // Single Claim State
   const [singleClaim, setSingleClaim] = useState({
-    claimant: user?.name || user?.email || '',
-    date: new Date().toISOString().split('T')[0],
-    category: 'Meals',
-    amount: '',
-    currency: 'USD',
-    description: '',
-    receipt_available: true,
+    claimant: reclaimData?.claimant || user?.name || user?.email || '',
+    date: reclaimData?.date || new Date().toISOString().split('T')[0],
+    category: reclaimData?.category || 'Meals',
+    amount: reclaimData?.amount || '',
+    currency: reclaimData?.currency || 'USD',
+    description: reclaimData?.description || '',
+    receipt_available: reclaimData?.receipt_available ?? true,
   });
+
+  useEffect(() => {
+    if (reclaimData) {
+      setMessage({
+        type: 'info',
+        text: `Reclaiming Claim #${reclaimData.id}: Adjust details or attach receipt before resubmitting for review.`,
+      });
+    }
+  }, [reclaimData]);
+
 
   // Batch Claim State
   const [batchClaims, setBatchClaims] = useState([
@@ -114,14 +128,30 @@ export const SubmitClaim = () => {
         <div
           style={{
             ...styles.alert,
-            background: message.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-            borderColor: message.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-            color: message.type === 'success' ? '#34d399' : '#f87171',
+            background:
+              message.type === 'success'
+                ? 'rgba(16, 185, 129, 0.15)'
+                : message.type === 'info'
+                ? 'rgba(56, 189, 248, 0.15)'
+                : 'rgba(239, 68, 68, 0.15)',
+            borderColor:
+              message.type === 'success'
+                ? 'rgba(16, 185, 129, 0.3)'
+                : message.type === 'info'
+                ? 'rgba(56, 189, 248, 0.3)'
+                : 'rgba(239, 68, 68, 0.3)',
+            color:
+              message.type === 'success'
+                ? '#34d399'
+                : message.type === 'info'
+                ? '#38bdf8'
+                : '#f87171',
           }}
         >
           {message.text}
         </div>
       )}
+
 
       {/* Mode Switcher Tabs */}
       <div style={styles.tabContainer}>
@@ -235,6 +265,36 @@ export const SubmitClaim = () => {
                 Receipt available for this claim
               </label>
             </div>
+
+            {singleClaim.receipt_available && (
+              <div className="form-group" style={{ marginTop: '0.5rem', padding: '1rem', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <label className="form-label" style={{ marginBottom: '0.4rem' }}>Upload Receipt Document / Image</label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="form-input"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                      const res = await claimsAPI.uploadReceipt(formData);
+                      setSingleClaim((prev) => ({ ...prev, receipt_path: res.data.receipt_path }));
+                      alert(`Receipt file "${file.name}" uploaded and attached successfully!`);
+                    } catch (err) {
+                      alert('Failed to upload receipt file.');
+                    }
+                  }}
+                />
+                {singleClaim.receipt_path && (
+                  <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '0.4rem', fontWeight: 500 }}>
+                    Attached: {singleClaim.receipt_path}
+                  </div>
+                )}
+              </div>
+            )}
+
 
             <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
               <Send size={18} /> {loading ? 'Submitting...' : 'Submit Expense Claim'}

@@ -73,58 +73,9 @@ export const Login = () => {
                   />
                 </div>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Select Account Role</label>
-                <div style={styles.roleGrid}>
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.roleOption,
-                      ...(role === 'user' ? styles.roleOptionActive : {}),
-                    }}
-                    onClick={() => setRole('user')}
-                  >
-                    <User size={18} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Employee</div>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Submit Claims</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.roleOption,
-                      ...(role === 'reviewer' ? styles.roleOptionActive : {}),
-                    }}
-                    onClick={() => setRole('reviewer')}
-                  >
-                    <Shield size={18} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Reviewer</div>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Approve / Override</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.roleOption,
-                      ...(role === 'admin' ? styles.roleOptionActive : {}),
-                    }}
-                    onClick={() => setRole('admin')}
-                  >
-                    <Shield size={18} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Admin</div>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Full System Access</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
             </>
           )}
+
 
           <div className="form-group">
             <label className="form-label">Email Address</label>

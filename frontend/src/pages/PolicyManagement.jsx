@@ -81,42 +81,39 @@ export const PolicyManagement = () => {
         )}
       </div>
 
-      {/* Automated PDF Upload Card for Admin */}
+      {/* Automated PDF Upload Card for Admin (Upcoming Feature - Disabled) */}
       {isAdminOrReviewer && (
-        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', borderLeft: '4px solid #a855f7' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', borderLeft: '4px solid #a855f7', opacity: 0.85 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <div style={{ padding: '0.75rem', background: 'rgba(168, 85, 247, 0.15)', borderRadius: '12px', color: '#c084fc' }}>
                 <Upload size={24} />
               </div>
               <div>
-                <h3 style={{ color: '#f8fafc', fontSize: '1.1rem' }}>Automated PDF Policy Rule Extractor</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-                  Upload company policy documents (PDF) to automatically extract spending limits & rule citations using AI
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <h3 style={{ color: '#f8fafc', fontSize: '1.1rem' }}>Automated PDF Policy Rule Extractor</h3>
+                  <span className="badge badge-clarification" style={{ fontSize: '0.7rem' }}>UPCOMING FEATURE</span>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                  Upload company policy documents (PDF) to automatically extract spending limits & rule citations using AI (Coming Soon)
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handlePdfUpload} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setPdfFile(e.target.files[0])}
-                style={{ display: 'none' }}
-                id="pdfUploadInput"
-              />
-              <label htmlFor="pdfUploadInput" className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-                <FileText size={16} /> {pdfFile ? pdfFile.name : 'Choose PDF File'}
-              </label>
-              {pdfFile && (
-                <button type="submit" className="btn btn-primary" disabled={uploadingPdf}>
-                  {uploadingPdf ? 'Extracting...' : 'Upload & Parse'}
-                </button>
-              )}
-            </form>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled
+                style={{ opacity: 0.5, cursor: 'not-allowed' }}
+              >
+                <FileText size={16} /> Choose PDF File (Disabled)
+              </button>
+            </div>
           </div>
         </div>
       )}
+
 
       {/* Policy Rules Grid */}
       {loading ? (

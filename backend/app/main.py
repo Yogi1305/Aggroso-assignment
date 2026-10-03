@@ -5,11 +5,17 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+import os
+from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import Base, engine
 from app.api.claims import router as claims_router
 from app.api.policies import router as policies_router
 from app.api.auth import router as auth_router
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 # Configure Loguru Logger
 logger.remove()  # Remove default handler
@@ -68,6 +74,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(claims_router, prefix="/api")
 app.include_router(policies_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 @app.get("/")
 def root():

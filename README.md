@@ -1,143 +1,356 @@
 # Expense Claim Policy Review Assistant
 
-An intelligent internal full-stack enterprise API service built with **FastAPI**, **SQLAlchemy**, and **Groq/OpenAI LLM Integration**. It automates employee expense claim reviews against organizational expense policies by combining **Deterministic Business Validation** (duplicate detection, limit caps, receipt enforcement) with **AI-Powered Policy Reasoning** (ambiguous classification, policy section retrieval, compliance explanations, and uncertainty flags).
+An internal full-stack application that reviews employee expense claims against organizational expense policies using **deterministic validation** and an **AI policy reasoning engine**, with a human-in-the-loop reviewer approval workflow.
 
 ---
 
-## ⚡ Quick Start & Run Commands
+## Table of Contents
 
-Follow these steps to get the application up and running locally:
-
-### 1. Clone & Navigate to Backend
-```bash
-cd backend
-```
-
-### 2. Environment Setup & Requirements (`.env`)
-Create a `.env` file inside the `backend/` directory (or copy `.env.sample`):
-
-```bash
-cp .env.sample .env
-```
-
-Ensure your `backend/.env` file contains the required environment variables:
-
-```env
-# Application Configuration
-APP_NAME="Expense Claim Policy Review Assistant API"
-
-# Database Configuration (SQLite default, or Supabase PostgreSQL)
-DATABASE_URL="sqlite:///./expense_claims.db"
-
-# JWT Secret Key
-SECRET_KEY="your-super-secret-key-for-jwt-signing"
-
-# Groq / LLM Integration Configuration
-GROQ_API_KEY="your_groq_api_key_here"
-OPENAI_API_KEY="your_groq_api_key_here"
-OPENAI_BASE_URL="https://api.groq.com/openai/v1"
-LLM_MODEL="openai/gpt-oss-20b"
-
-```
-
-### 3. Installation Guide
-
-```bash
-# Create Python virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-# Windows (PowerShell):
-.\.venv\Scripts\Activate.ps1
-# Linux / macOS:
-source .venv/bin/activate
-
-# Install all project dependencies
-pip install -r requirements.txt
-```
-
-### 4. Run Commands
-
-#### A. Backend Server (FastAPI)
-```bash
-cd backend
-python seed_data.py
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-- Interactive API Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-
-#### B. Frontend Web App (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-- Web Application Portal: [http://localhost:5173](http://localhost:5173)
-
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Setup & Installation](#setup--installation)
+- [Running Locally](#running-locally)
+- [Running Tests](#running-tests)
+- [Project Structure](#project-structure)
+- [Completed Scope](#completed-scope)
+- [Excluded Scope](#excluded-scope)
+- [Limitations](#limitations)
+- [Deployment](#deployment)
 
 ---
 
-## Architecture & Core Features
+## Architecture
 
-### 1. User Authentication & Role-Based Access Control (RBAC)
-- **User Registration & JWT Login**: Secure authentication with password hashing (`bcrypt`) and JSON Web Tokens.
-- **Roles & Permissions**:
-  - `user`: Submit single or batch expense claims.
-  - `reviewer`: Review, evaluate claims, request clarifications, or approve/reject claims.
-  - `admin`: Manage organizational policy rules, perform approvals/rejects, and configure AI settings.
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        React Frontend (Vite)                     │
+│  Login ─ Dashboard ─ SubmitClaim ─ ClaimDetails ─ Policies ─ Roles│
+│                   Axios API Client + JWT Auth                    │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │ REST API (JSON)
+┌────────────────────────────▼─────────────────────────────────────┐
+│                     FastAPI Backend (Python)                      │
+│                                                                  │
+│  ┌──────────────┐  ┌────────────────────┐  ┌──────────────────┐  │
+│  │   Auth API   │  │    Claims API      │  │  Policies API    │  │
+│  │  register    │  │  create / list     │  │  list / create   │  │
+│  │  login       │  │  evaluate          │  │                  │  │
+│  │  role-request│  │  decision          │  └──────────────────┘  │
+│  │  role-approve│  │  upload-receipt    │                        │
+│  └──────────────┘  └──────┬─────────────┘                        │
+│                           │                                      │
+│               ┌───────────▼────────────┐                         │
+│               │  Evaluation Pipeline   │                         │
+│               │                        │                         │
+│               │  1. Deterministic      │  ← Rule-based checks    │
+│               │     Validator          │    (duplicates, limits,  │
+│               │                        │     receipts, fields)    │
+│               │  2. AI Policy Engine   │  ← Category classifier, │
+│               │     (Groq LLM)        │    compliance reasoning, │
+│               │                        │    policy citations      │
+│               └───────────┬────────────┘                         │
+│                           │                                      │
+│               ┌───────────▼────────────┐                         │
+│               │  SQLite / PostgreSQL   │  ← Claims, Policies,    │
+│               │  (SQLAlchemy ORM)      │    Users, Decisions,     │
+│               │                        │    RoleRequests           │
+│               └────────────────────────┘                         │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-### 2. Deterministic Validation Engine
-- **Duplicate Detection**: Identifies duplicate claims submitted across claimant, amount, currency, and date windows.
-- **Receipt Compliance**: Enforces mandatory receipt policies per category or threshold limits.
-- **Policy Limit Enforcement**: Checks claims against max allowable amounts per category.
-- **Field & Date Validation**: Validates required fields, currency formats, and ISO dates.
-- **Batch Totals & Analytics**: Aggregates claim counts, currency totals, and category breakdowns.
+### Claim Evaluation Flow
 
-### 3. AI Policy Evaluation Engine (Powered by Groq / LLM)
-- **Ambiguous Description Classification**: Automatically classifies vague descriptions (e.g. "dinner with client during trip") into concrete policy categories.
-- **Uncertainty Flagging**: Explicitly flags low-confidence or ambiguous classifications so reviewers pay special attention.
-- **Policy Section Retrieval & Evidence Citation**: Cites exact policy rules and clauses backing every evaluation finding.
-- **Compliance Reasoning**: Generates plain-text explanations explaining compliance status (`COMPLIANT`, `REQUIRES_REVIEW`, `NEEDS_CLARIFICATION`, `NON_COMPLIANT`).
-
-### 4. Reviewer Workflow & Audit History
-- **Reviewer Actions**: Approve, Reject, or Request Clarification on submitted claims.
-- **AI Classification Override**: Allows human reviewers to override AI-suggested categories with mandatory audit reasons.
-- **Audit Trail**: Maintains full timeline of claim creation, AI evaluations, and reviewer decisions.
+1. **Employee submits** a claim via the frontend form (single or batch).
+2. **Deterministic Validator** runs rule-based checks: duplicate detection, receipt requirements, category spending limits, field validation.
+3. **AI Policy Engine** classifies ambiguous descriptions into policy categories, retrieves relevant policy sections, explains compliance reasoning, cites policy evidence, and flags uncertain classifications.
+4. **Reviewer/Admin** sees the combined audit report and can: Approve, Reject, Request Clarification, or Override the AI classification with a reason.
+5. **Employee** receives feedback with the reviewer reason and can Reclaim/Resubmit.
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Python 3.10+, FastAPI, Pydantic v2
-- **Database & ORM**: SQLite (Local) / PostgreSQL (Supabase), SQLAlchemy 2.0
-- **Authentication**: JWT (`python-jose`), Passlib (`bcrypt`)
-- **LLM Provider**: Groq API (`openai/gpt-oss-20b` / Llama 3) with OpenAI API fallback compatibility
+| Layer       | Technology                                                  |
+| :---------- | :---------------------------------------------------------- |
+| Frontend    | React 19, Vite 8, React Router 7, Axios, Lucide Icons       |
+| Styling     | Vanilla CSS (glassmorphism dark theme, animations)           |
+| Backend     | Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2              |
+| Auth        | JWT (python-jose), bcrypt password hashing                   |
+| AI/LLM      | Groq API (OpenAI-compatible), keyword-based classifier       |
+| Database    | SQLite (dev) / PostgreSQL via Supabase (prod)                |
+| Logging     | Loguru (structured file + console logs)                      |
+| Testing     | pytest + FastAPI TestClient                                  |
 
 ---
 
-## API Endpoints Reference
+## Setup & Installation
 
-### Authentication (`/api/auth`)
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| `POST` | `/api/auth/register` | Register a new user (`user`, `reviewer`, `admin`) | Public |
-| `POST` | `/api/auth/login` | Authenticate user & receive JWT token + role | Public |
-| `POST` | `/api/auth/logout` | Client token invalidation notice | Public |
+### Prerequisites
 
-### Policy Management (`/api/policies`)
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| `GET` | `/api/policies` | List all organizational policy rules | Authenticated |
-| `POST` | `/api/policies` | Create or update category policy rules | Admin / Reviewer |
+- Python 3.10+ with `pip`
+- Node.js 18+ with `npm`
+- A Groq API key (free at [console.groq.com](https://console.groq.com))
 
-### Claims & Reviews (`/api/claims`)
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| `POST` | `/api/claims` | Create a single expense claim | Authenticated |
-| `POST` | `/api/claims/batch` | Batch submit expense claims | Authenticated |
-| `GET` | `/api/claims` | List claims (filterable by status/claimant) | Authenticated |
-| `GET` | `/api/claims/summary/totals` | Retrieve claim totals and analytics | Authenticated |
-| `GET` | `/api/claims/{id}` | Get detailed claim & validation results | Authenticated |
-| `POST` | `/api/claims/{id}/evaluate` | Trigger Deterministic & AI Policy evaluation | Authenticated |
-| `POST` | `/api/claims/{id}/decision` | Record approval, rejection, or category override | Reviewer / Admin |
-| `GET` | `/api/claims/{id}/history` | Retrieve full decision audit log | Authenticated |
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Yogi1305/Aggroso-assignment.git
+cd Aggroso-assignment
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv .venv
+
+# Activate (Windows)
+.\.venv\Scripts\activate
+# Activate (macOS/Linux)
+# source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env and add your GROQ_API_KEY
+```
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+### 4. Seed Demo Data (Optional)
+
+```bash
+cd backend
+python seed_data.py
+```
+
+This seeds sample policy rules (Meals, Travel, Software, Office Supplies, Client Entertainment) and example claims with pre-evaluated results.
+
+---
+
+## Running Locally
+
+### Start Backend (Port 8000)
+
+```bash
+cd backend
+.\.venv\Scripts\activate
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- API docs: http://127.0.0.1:8000/docs
+- Health check: http://127.0.0.1:8000/
+
+### Start Frontend (Port 5173)
+
+```bash
+cd frontend
+npm run dev
+```
+
+- App: http://127.0.0.1:5173/
+
+### Default Admin Bootstrap
+
+Register a user account, then manually update the role in the database or use the seed script to create an admin account. All registrations default to the `user` role for security.
+
+---
+
+## Running Tests
+
+```bash
+cd backend
+.\.venv\Scripts\activate
+python -m pytest tests/test_backend.py -v
+```
+
+### Test Coverage
+
+| Test                              | What it validates                                                   |
+| :-------------------------------- | :------------------------------------------------------------------ |
+| `test_create_and_evaluate_claim`  | End-to-end claim creation → deterministic + AI evaluation pipeline  |
+| `test_reviewer_override_category` | Reviewer role override of AI classification with reason enforcement  |
+
+Tests verify core behaviors: claim persistence, deterministic receipt/limit detection, AI compliance status output, and RBAC-protected reviewer actions.
+
+---
+
+## Project Structure
+
+```
+Aggroso/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── auth.py           # Auth, JWT, role request/approval endpoints
+│   │   │   ├── claims.py         # Claim CRUD, evaluate, decision, receipt upload
+│   │   │   └── policies.py       # Policy rule management (admin/reviewer only)
+│   │   ├── models/
+│   │   │   └── models.py         # SQLAlchemy models (User, Claim, PolicyRule, etc.)
+│   │   ├── schemas/
+│   │   │   └── schemas.py        # Pydantic request/response schemas
+│   │   ├── services/
+│   │   │   ├── ai_policy_engine.py         # AI classification & compliance reasoning
+│   │   │   └── deterministic_validator.py  # Rule-based validation checks
+│   │   ├── config.py             # Settings from .env
+│   │   ├── database.py           # SQLAlchemy engine & session
+│   │   └── main.py               # FastAPI app setup, middleware, static mounts
+│   ├── tests/
+│   │   └── test_backend.py       # pytest test suite
+│   ├── uploads/receipts/         # Uploaded receipt file storage
+│   ├── logs/                     # Loguru application logs
+│   ├── requirements.txt
+│   ├── seed_data.py              # Demo data seeder
+│   └── .env.example
+├── frontend/
+│   └── src/
+│       ├── components/
+│       │   ├── ClaimStatusBadge.jsx   # Dynamic status badge component
+│       │   ├── Navbar.jsx             # Top navigation bar with user info
+│       │   └── Sidebar.jsx            # Navigation sidebar with role-aware links
+│       ├── context/
+│       │   └── AuthContext.jsx        # React auth state management
+│       ├── pages/
+│       │   ├── Login.jsx              # Registration & login (role selector removed)
+│       │   ├── Dashboard.jsx          # Claims overview with analytics & filters
+│       │   ├── SubmitClaim.jsx        # Single & batch claim submission + receipt upload
+│       │   ├── ClaimDetails.jsx       # Full audit view + reviewer actions + reclaim
+│       │   ├── PolicyManagement.jsx   # Policy rules (PDF extractor: upcoming)
+│       │   └── RoleRequestsPage.jsx   # Role upgrade request & admin approval
+│       ├── services/
+│       │   └── api.js                 # Axios API client with JWT interceptor
+│       ├── App.jsx                    # Router & layout
+│       └── index.css                  # Global design system
+├── README.md
+├── AGENT_USAGE.md
+├── .env.example
+└── .gitignore
+```
+
+---
+
+## Completed Scope
+
+### ✅ Claim Format & Submission
+- All 7 claim fields (claimant, date, category, amount, currency, description, receipt available)
+- Single claim and batch claim submission
+- Receipt file upload (images, PDFs) with server-side storage
+
+### ✅ AI Workflow
+- Classify ambiguous claim descriptions into policy categories (keyword-based + pattern matching)
+- Retrieve relevant policy sections with evidence citations
+- Explain compliance, clarification needs, or review requirements
+- Ask for missing information (e.g., missing receipts)
+- Cite policy evidence behind each finding
+- Clearly mark uncertain/low-confidence classifications
+
+### ✅ Deterministic Validation
+- Duplicate claim detection (same claimant + amount + currency + date/description)
+- Total calculations with per-currency and per-category breakdowns
+- Missing receipt identification against configured policy thresholds
+- Category spending limit checking
+- Date format and required field validation
+
+### ✅ Reviewer Actions
+- Approve claims
+- Reject claims (with reason visible to employee)
+- Request clarification (employee sees feedback + can reclaim)
+- Override AI classification with mandatory reason and new category
+- View complete review and decision audit history timeline
+
+### ✅ Security & RBAC
+- JWT-based authentication with bcrypt password hashing
+- Default registration as `user` role (no self-escalation)
+- Role upgrade request workflow with admin approval/rejection
+- Backend endpoint guards: only reviewer/admin can perform reviews
+- Claim privacy scoping: employees see only their own claims
+
+### ✅ UI/UX
+- Dark glassmorphism design with smooth animations
+- Loading, empty, success, validation, and error states across all pages
+- Responsive layout with sidebar navigation
+- Real-time status badges and analytics dashboard
+
+### ✅ Logging
+- Structured Loguru logging: console (INFO) + rotating file (DEBUG)
+- HTTP request/response logging middleware with timing
+- Global exception handler for unhandled errors
+
+---
+
+## Excluded Scope
+
+The following are **intentionally excluded** as stated in the problem requirements:
+
+| Feature                  | Reason                                    |
+| :----------------------- | :---------------------------------------- |
+| Actual reimbursement     | Not required per specification             |
+| Payroll integration      | Not required per specification             |
+| Tax advice               | Not required per specification             |
+| Receipt OCR              | Not required per specification             |
+| Payment processing       | Not required per specification             |
+| PDF policy extractor     | Marked as "Upcoming Feature" in UI         |
+| Email notifications      | Out of scope; reviewer feedback is in-app  |
+
+---
+
+## Limitations
+
+1. **AI Engine**: Uses keyword-matching heuristics rather than a live LLM API call for category classification. The Groq LLM integration is configured but the current classifier operates deterministically for reliability and speed. Extending to real-time LLM calls requires only modifying `ai_policy_engine.py`.
+
+2. **Database**: Default SQLite for local development. For production, switch `DATABASE_URL` to PostgreSQL (Supabase connection string provided in `.env.example`).
+
+3. **Receipt Storage**: Files are stored locally on the server filesystem (`backend/uploads/receipts/`). For production, integrate with cloud storage (e.g., S3, GCS).
+
+4. **Admin Bootstrap**: The first admin must be promoted manually in the database or via seed script. There is no self-service admin creation path (by design for security).
+
+5. **Session Management**: JWT tokens are stored in `localStorage`. For production, consider `httpOnly` cookies and token refresh mechanisms.
+
+---
+
+## Deployment
+
+### Production Build
+
+```bash
+# Frontend production build
+cd frontend
+npm run build
+# Output: frontend/dist/
+
+# Backend
+cd backend
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Environment Variables for Production
+
+See [`.env.example`](.env.example) for all required configuration. Key variables:
+
+| Variable         | Description                              |
+| :--------------- | :--------------------------------------- |
+| `DATABASE_URL`   | PostgreSQL connection string (Supabase)  |
+| `GROQ_API_KEY`   | Groq API key for LLM evaluation          |
+| `SECRET_KEY`     | JWT signing secret (change in production)|
+| `LLM_MODEL`      | LLM model identifier                    |
+
+### Deployment Options
+
+- **Backend**: Deploy FastAPI on Render, Railway, or any Docker-compatible platform
+- **Frontend**: Deploy Vite build to Vercel, Netlify, or serve via FastAPI static mount
+- **Database**: Supabase PostgreSQL (connection string in `.env`)
+
+---
+
+## License
+
+This project was built as an assignment submission.

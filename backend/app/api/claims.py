@@ -12,7 +12,25 @@ from app.schemas.schemas import (
 from app.services.deterministic_validator import DeterministicValidator
 from app.services.ai_policy_engine import AIPolicyEngine
 
+import os
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+from fastapi.staticfiles import StaticFiles
+
 router = APIRouter(prefix="/claims", tags=["Claims"])
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "receipts")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/upload-receipt")
+def upload_receipt(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(file.file.read())
+    relative_path = f"/uploads/receipts/{filename}"
+    return {"receipt_path": relative_path, "filename": file.filename}
 
 @router.post("", response_model=ClaimResponse)
 def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -25,6 +43,7 @@ def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db), current_u
         currency=claim_in.currency.strip().upper(),
         description=claim_in.description.strip(),
         receipt_available=claim_in.receipt_available,
+        receipt_path=claim_in.receipt_path,
         status=ClaimStatus.PENDING_REVIEW.value,
         is_evaluated=False
     )
@@ -32,6 +51,7 @@ def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db), current_u
     db.commit()
     db.refresh(db_claim)
     return db_claim
+
 
 @router.post("/batch", response_model=List[ClaimResponse])
 def create_claim_batch(batch_in: ClaimBatchCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -61,19 +81,36 @@ def create_claim_batch(batch_in: ClaimBatchCreate, db: Session = Depends(get_db)
 def list_claims(
     status: Optional[str] = Query(None),
     claimant: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     query = db.query(Claim)
+    # If employee/user role, strictly scope claims to their own email/name
+    if current_user.role == RoleEnum.USER.value:
+        query = query.filter(
+            (Claim.claimant == current_user.email) | (Claim.claimant == current_user.name)
+        )
+    elif claimant:
+        query = query.filter(Claim.claimant.ilike(f"%{claimant}%"))
+
     if status:
         query = query.filter(Claim.status == status.upper())
-    if claimant:
-        query = query.filter(Claim.claimant.ilike(f"%{claimant}%"))
+
     return query.order_by(Claim.id.desc()).all()
 
 @router.get("/summary/totals", response_model=ClaimTotalsResponse)
-def get_claim_totals(db: Session = Depends(get_db)):
-    claims = db.query(Claim).all()
+def get_claim_totals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Claim)
+    if current_user.role == RoleEnum.USER.value:
+        query = query.filter(
+            (Claim.claimant == current_user.email) | (Claim.claimant == current_user.name)
+        )
+    claims = query.all()
     return DeterministicValidator.calculate_totals(claims)
+
 
 @router.get("/{claim_id}", response_model=ClaimResponse)
 def get_claim(claim_id: int, db: Session = Depends(get_db)):
