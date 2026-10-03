@@ -159,9 +159,15 @@ npm run dev
 
 - App: http://127.0.0.1:5173/
 
-### Default Admin Bootstrap
+### Default Test Accounts
 
-Register a user account, then manually update the role in the database or use the seed script to create an admin account. All registrations default to the `user` role for security.
+| Role | Email | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@test.com` | `admin123` | Full audit access, policy management, role request approvals |
+| **User (Employee)** | `user@test.com` | `user123` | Submit claims, view own claim audit history & feedback |
+
+Registering a new account will default to `user` role for security. Users can request role upgrades from the **Role Requests** page in the UI.
+
 
 ---
 
