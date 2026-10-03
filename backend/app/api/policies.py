@@ -6,6 +6,9 @@ from app.database import get_db
 from app.models.models import PolicyRule
 from app.schemas.schemas import PolicyRuleCreate, PolicyRuleResponse
 
+from app.api.auth import get_current_user
+from app.models.models import User, RoleEnum
+
 router = APIRouter(prefix="/policies", tags=["Policies"])
 
 @router.get("", response_model=List[PolicyRuleResponse])
@@ -13,7 +16,14 @@ def get_policies(db: Session = Depends(get_db)):
     return db.query(PolicyRule).all()
 
 @router.post("", response_model=PolicyRuleResponse)
-def create_policy(policy_in: PolicyRuleCreate, db: Session = Depends(get_db)):
+def create_policy(
+    policy_in: PolicyRuleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in [RoleEnum.REVIEWER.value, RoleEnum.ADMIN.value]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify policy rules")
+
     existing = db.query(PolicyRule).filter(PolicyRule.category.ilike(policy_in.category.strip())).first()
     if existing:
         # Update existing policy

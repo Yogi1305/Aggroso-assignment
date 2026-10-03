@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import Base, engine, SessionLocal
-from app.models.models import PolicyRule, Claim, ClaimStatus
+from app.models.models import PolicyRule, Claim, ClaimStatus, ClaimValidationResult, ReviewDecision, User
 
 client = TestClient(app)
 
@@ -10,8 +10,11 @@ client = TestClient(app)
 def setup_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+    db.query(ClaimValidationResult).delete()
+    db.query(ReviewDecision).delete()
     db.query(Claim).delete()
     db.query(PolicyRule).delete()
+    db.query(User).delete()
     db.commit()
 
     # Seed test policy
@@ -30,7 +33,22 @@ def setup_db():
     yield db
     db.close()
 
+
+def get_auth_headers(role="reviewer"):
+    # Register test user
+    email = f"test_{role}@example.com"
+    client.post("/api/auth/register", json={
+        "name": f"Test {role}",
+        "email": email,
+        "password": "password123",
+        "role": role
+    })
+    login_resp = client.post("/api/auth/login", json={"email": email, "password": "password123"})
+    token = login_resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
 def test_create_and_evaluate_claim():
+    headers = get_auth_headers("user")
     # 1. Create claim
     payload = {
         "claimant": "John Doe",
@@ -41,12 +59,12 @@ def test_create_and_evaluate_claim():
         "description": "Lunch meeting with partner",
         "receipt_available": False # Receipt missing for > $20
     }
-    response = client.post("/api/claims", json=payload)
+    response = client.post("/api/claims", json=payload, headers=headers)
     assert response.status_code == 200
     claim_id = response.json()["id"]
 
     # 2. Evaluate claim
-    eval_resp = client.post(f"/api/claims/{claim_id}/evaluate")
+    eval_resp = client.post(f"/api/claims/{claim_id}/evaluate", headers=headers)
     assert eval_resp.status_code == 200
     data = eval_resp.json()
     assert data["missing_receipt"] is True
@@ -54,6 +72,9 @@ def test_create_and_evaluate_claim():
     assert "upload an itemized receipt" in data["missing_info_request"].lower()
 
 def test_reviewer_override_category():
+    user_headers = get_auth_headers("user")
+    reviewer_headers = get_auth_headers("reviewer")
+
     # Create claim
     payload = {
         "claimant": "Alice Smith",
@@ -64,7 +85,7 @@ def test_reviewer_override_category():
         "description": "Taxi cab to airport",
         "receipt_available": True
     }
-    create_resp = client.post("/api/claims", json=payload)
+    create_resp = client.post("/api/claims", json=payload, headers=user_headers)
     claim_id = create_resp.json()["id"]
 
     # Decision override
@@ -74,11 +95,12 @@ def test_reviewer_override_category():
         "reason": "Description clearly indicates ground transportation",
         "new_category": "Travel"
     }
-    dec_resp = client.post(f"/api/claims/{claim_id}/decision", json=decision_payload)
+    dec_resp = client.post(f"/api/claims/{claim_id}/decision", json=decision_payload, headers=reviewer_headers)
     assert dec_resp.status_code == 200
     assert dec_resp.json()["action"] == "OVERRIDE_CLASSIFICATION"
     assert dec_resp.json()["new_category"] == "Travel"
 
     # Verify claim category updated
-    get_resp = client.get(f"/api/claims/{claim_id}")
+    get_resp = client.get(f"/api/claims/{claim_id}", headers=reviewer_headers)
     assert get_resp.json()["category"] == "Travel"
+

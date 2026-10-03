@@ -38,7 +38,11 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
+  requestRoleUpgrade: (data) => api.post('/auth/role-request', data),
+  getRoleRequests: () => api.get('/auth/role-requests'),
+  decideRoleRequest: (id, action) => api.post(`/auth/role-requests/${id}/decision`, { action }),
 };
+
 
 export const claimsAPI = {
   getClaims: (params) => api.get('/claims', { params }),

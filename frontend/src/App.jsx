@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { SubmitClaim } from './pages/SubmitClaim';
 import { ClaimDetails } from './pages/ClaimDetails';
 import { PolicyManagement } from './pages/PolicyManagement';
+import { RoleRequestsPage } from './pages/RoleRequestsPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -77,11 +78,23 @@ export function App() {
             }
           />
 
+          <Route
+            path="/role-requests"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <RoleRequestsPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
   );
 }
+
 
 export default App;

@@ -30,6 +30,26 @@ class TokenResponse(BaseModel):
     token_type: str
     role: str
 
+class RoleUpgradeCreate(BaseModel):
+    requested_role: str # reviewer or admin
+    reason: Optional[str] = None
+
+class RoleUpgradeAction(BaseModel):
+    action: str # APPROVE or REJECT
+
+class RoleUpgradeResponse(BaseModel):
+    id: int
+    user_id: int
+    user_email: str
+    requested_role: str
+    status: str
+    reason: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 
 # Policy Schemas
 class PolicyRuleBase(BaseModel):

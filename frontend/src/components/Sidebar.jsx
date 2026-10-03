@@ -36,6 +36,13 @@ export const Sidebar = () => {
           <BookOpen size={18} /> Expense Policy Rules
         </NavLink>
 
+        <NavLink
+          to="/role-requests"
+          style={({ isActive }) => (isActive ? { ...styles.link, ...styles.activeLink } : styles.link)}
+        >
+          <ShieldCheck size={18} /> Role Requests
+        </NavLink>
+
         {isReviewerOrAdmin && (
           <>
             <div style={{ ...styles.sectionHeader, marginTop: '1.5rem' }}>AUDIT & MANAGEMENT</div>
@@ -44,6 +51,7 @@ export const Sidebar = () => {
             </div>
           </>
         )}
+
       </nav>
 
       <div style={styles.footer}>
