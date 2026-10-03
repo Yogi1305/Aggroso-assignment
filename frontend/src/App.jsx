@@ -16,11 +16,13 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const MainLayout = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} />
       <div className="main-content">
-        <Navbar />
+        <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         {children}
       </div>
     </div>

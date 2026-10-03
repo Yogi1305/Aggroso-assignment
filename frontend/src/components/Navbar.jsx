@@ -1,8 +1,8 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, User, LogOut, FileCheck } from 'lucide-react';
+import { Shield, User, LogOut, FileCheck, Menu, X } from 'lucide-react';
 
-export const Navbar = () => {
+export const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
@@ -21,6 +21,14 @@ export const Navbar = () => {
   return (
     <header style={styles.header}>
       <div style={styles.brand}>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="btn btn-secondary sidebar-toggle-btn"
+          style={{ padding: '0.45rem', marginRight: '0.25rem', display: 'flex', alignItems: 'center' }}
+          title={sidebarOpen ? "Collapse Navigation" : "Expand Navigation"}
+        >
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
         <div style={styles.logoIcon}>
           <FileCheck size={22} color="#fff" />
         </div>
@@ -29,6 +37,7 @@ export const Navbar = () => {
           <p style={styles.brandSubtitle}>Expense Audit & Compliance Engine</p>
         </div>
       </div>
+
 
       <div style={styles.userSection}>
         <div style={styles.userInfo}>

@@ -1,20 +1,20 @@
 # AGENT_USAGE.md — AI Agent Usage Documentation
 
-This document describes how an AI coding agent (Gemini / Claude) was used during the development of the Expense Claim Policy Review Assistant, including tools used, representative prompts, delegated work, mistakes, and output verification methods.
+This document describes how AI coding agents (Gemini and Claude) were used during the development of the Expense Claim Policy Review Assistant, including tools used, representative prompts, delegated work, agent mistakes, and output verification methods.
 
 ---
 
-## Tools Used
+## Tools & Models Used
 
-| Tool / Technology         | Purpose                                                               |
-| :------------------------ | :-------------------------------------------------------------------- |
-| **Gemini Antigravity**    | Primary AI coding agent for code generation, debugging, and refactoring |
-| **Claude Opus**           | Documentation generation and architectural decisions                    |
-| **VS Code**               | IDE for code editing with agent integration                            |
-| **Git + GitHub**           | Version control and repository hosting                                 |
-| **FastAPI TestClient**     | Automated backend integration testing                                  |
-| **Browser DevTools**       | Frontend debugging, network inspection, visual verification            |
-| **Loguru**                 | Structured application logging for runtime verification                |
+| Tool / Technology         | Purpose & Role                                                         |
+| :------------------------ | :--------------------------------------------------------------------- |
+| **Gemini Models (Flash & Pro)** | **Primary AI Coding Agent**: Used for all code generation, backend API development, frontend building, UI refactoring, database migrations, debugging, and deployment configurations. |
+| **Claude Opus**           | **Architectural Planning Agent**: Used strictly for initial implementation planning, high-level system architecture design, and creating structured documentation. |
+| **VS Code**               | Primary IDE for pair programming and code editing with agent integration.|
+| **Git + GitHub**           | Version control, repository management, and deployment triggers.        |
+| **FastAPI TestClient**     | Automated backend integration testing.                                 |
+| **Browser DevTools**       | Frontend debugging, network inspection, and responsive design checks.  |
+| **Loguru**                 | Structured application logging for runtime verification.               |
 
 ---
 

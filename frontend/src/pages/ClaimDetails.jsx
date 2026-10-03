@@ -139,45 +139,11 @@ export const ClaimDetails = () => {
           </div>
           <p style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: 1.5 }}>{claim.description}</p>
         </div>
-
-        {/* Status Feedback & Reclaim Action for Employees */}
-        {(claim.status === 'REJECTED' || claim.status === 'CLARIFICATION_REQUESTED') && (
-          <div
-            style={{
-              marginTop: '1.25rem',
-              padding: '1.25rem',
-              borderRadius: '10px',
-              background: claim.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-              border: `1px solid ${claim.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h4 style={{ color: claim.status === 'REJECTED' ? '#f87171' : '#fbbf24', fontSize: '1rem', marginBottom: '0.3rem' }}>
-                  {claim.status === 'REJECTED' ? 'Claim Rejected by Reviewer' : 'Clarification Requested by Reviewer'}
-                </h4>
-                <p style={{ color: '#e2e8f0', fontSize: '0.88rem' }}>
-                  <strong>Reviewer Feedback / Reason:</strong>{' '}
-                  {claim.review_history?.[0]?.reason || valRes?.explanation || valRes?.missing_info_request || 'Please review the audit findings and update your claim.'}
-                </p>
-              </div>
-
-              <button
-                onClick={() => navigate('/submit', { state: { reclaimClaim: claim } })}
-                className="btn btn-primary"
-                style={{ background: claim.status === 'REJECTED' ? '#ef4444' : '#f59e0b', whiteSpace: 'nowrap' }}
-              >
-                Reclaim / Resubmit Expense
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-
 
       {/* Audit Split Screen: Left = Deterministic Checks, Right = AI Reasoning */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        
+
         {/* Left Column: Deterministic Checks */}
         <div className="glass-panel" style={{ padding: '1.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', color: '#818cf8' }}>
@@ -204,19 +170,6 @@ export const ClaimDetails = () => {
                   <div style={styles.checkTitle}>Receipt Requirement Check</div>
                   <div style={styles.checkSub}>
                     Receipt Available: {claim.receipt_available ? 'Yes' : 'No'}
-                    {claim.receipt_path && (
-                      <div style={{ marginTop: '0.2rem' }}>
-                        <a
-                          href={`${import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://127.0.0.1:8000'}${claim.receipt_path}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.78rem' }}
-                        >
-
-                          View Uploaded Receipt Attachment
-                        </a>
-                      </div>
-                    )}
                   </div>
                 </div>
                 {valRes.missing_receipt ? (
@@ -225,7 +178,6 @@ export const ClaimDetails = () => {
                   <span className="badge badge-approved"><CheckCircle2 size={13} /> RECEIPT COMPLIANT</span>
                 )}
               </div>
-
 
               <div style={styles.checkRow}>
                 <div>
