@@ -38,8 +38,12 @@ logger.add(
 logger.info("Initializing Expense Claim Review Assistant API with Loguru...")
 
 
-# Initialize database tables
-Base.metadata.create_all(bind=engine)
+# Initialize database tables gracefully
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created successfully.")
+except Exception as e:
+    logger.warning(f"Could not connect to database on startup: {e}. App will start, but endpoints requiring DB may fail if DB is unreachable.")
 
 app = FastAPI(
     title=settings.APP_NAME,

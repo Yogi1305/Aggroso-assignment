@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
+from loguru import logger
 from app.models.models import Claim, PolicyRule
 
 class DeterministicValidator:
@@ -15,10 +16,19 @@ class DeterministicValidator:
         - Category limit checking
         - Duplicate detection across existing claims
         """
+        logger.info(f"[Validator] Running deterministic validation for Claim #{claim.id}")
         invalid_fields = self._check_required_fields(claim)
         is_duplicate, duplicate_ids = self._check_duplicates(claim)
         missing_receipt = self._check_missing_receipt(claim)
         exceeds_limit, limit_amount = self._check_category_limit(claim)
+
+        logger.info(f"[Validator] Claim #{claim.id} checks complete: duplicate={'YES' if is_duplicate else 'NO'}, missing_receipt={'YES' if missing_receipt else 'NO'}, exceeds_limit={'YES' if exceeds_limit else 'NO'}")
+        if is_duplicate:
+            logger.info(f"[Validator] Claim #{claim.id} matches existing claim IDs: {duplicate_ids}")
+        if missing_receipt:
+            logger.info(f"[Validator] Claim #{claim.id} missing receipt for amount {claim.currency} {claim.amount:.2f}")
+        if exceeds_limit:
+            logger.info(f"[Validator] Claim #{claim.id} amount {claim.currency} {claim.amount:.2f} exceeds limit {limit_amount}")
 
         return {
             "invalid_fields": invalid_fields,

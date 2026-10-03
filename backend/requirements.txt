@@ -10,5 +10,6 @@ passlib[bcrypt]>=1.7.4
 python-jose[cryptography]>=3.3.0
 python-multipart>=0.0.9
 loguru>=0.7.2
+openai>=1.30.0
 
 
