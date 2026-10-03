@@ -58,17 +58,22 @@ pip install -r requirements.txt
 
 ### 4. Run Commands
 
+#### A. Backend Server (FastAPI)
 ```bash
-# Step A: Seed initial database with sample policies, claims, and default users
+cd backend
 python seed_data.py
-
-# Step B: Start the development server
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+- Interactive API Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 5. Access Interactive API Documentation
-- **Swagger UI (Interactive Docs)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc UI**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+#### B. Frontend Web App (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+- Web Application Portal: [http://localhost:5173](http://localhost:5173)
+
 
 ---
 
