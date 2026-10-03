@@ -1,20 +1,36 @@
-import logging
+import sys
 import time
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from app.config import settings
 from app.database import Base, engine
 from app.api.claims import router as claims_router
 from app.api.policies import router as policies_router
+from app.api.auth import router as auth_router
 
-# Setup structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+# Configure Loguru Logger
+logger.remove()  # Remove default handler
+logger.add(
+    sys.stdout,
+    colorize=True,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    level="INFO"
 )
-logger = logging.getLogger("expense_assistant")
+logger.add(
+    "logs/app.log",
+    rotation="10 MB",
+    retention="10 days",
+    enqueue=True,
+    backtrace=True,
+    diagnose=True,
+    level="DEBUG"
+)
+
+logger.info("Initializing Expense Claim Review Assistant API with Loguru...")
+
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -51,6 +67,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.include_router(claims_router, prefix="/api")
 app.include_router(policies_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 
 @app.get("/")
 def root():

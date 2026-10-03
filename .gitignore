@@ -41,8 +41,12 @@ yarn-error.log*
 .next/
 dist/
 
+# Logs
+logs/
+
 # IDE / System
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+

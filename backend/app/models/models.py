@@ -4,6 +4,22 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Enum, 
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+class RoleEnum(str, enum.Enum):
+    USER = "user"
+    REVIEWER = "reviewer"
+    ADMIN = "admin"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    contact = Column(String, nullable=True)
+    role = Column(String, default=RoleEnum.USER.value, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class ClaimStatus(str, enum.Enum):
     PENDING_REVIEW = "PENDING_REVIEW"
     APPROVED = "APPROVED"

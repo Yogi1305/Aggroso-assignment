@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database import get_db
-from app.models.models import Claim, ClaimValidationResult, ReviewDecision, ClaimStatus, ReviewAction
+from app.models.models import Claim, ClaimValidationResult, ReviewDecision, ClaimStatus, ReviewAction, User, RoleEnum
+from app.api.auth import get_current_user
 from app.schemas.schemas import (
     ClaimCreate, ClaimBatchCreate, ClaimResponse, ClaimTotalsResponse,
     ValidationResultResponse, DecisionCreate, ReviewDecisionResponse
@@ -14,7 +15,7 @@ from app.services.ai_policy_engine import AIPolicyEngine
 router = APIRouter(prefix="/claims", tags=["Claims"])
 
 @router.post("", response_model=ClaimResponse)
-def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db)):
+def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_claim = Claim(
         claimant=claim_in.claimant.strip(),
         date=claim_in.date.strip(),
@@ -33,7 +34,7 @@ def create_claim(claim_in: ClaimCreate, db: Session = Depends(get_db)):
     return db_claim
 
 @router.post("/batch", response_model=List[ClaimResponse])
-def create_claim_batch(batch_in: ClaimBatchCreate, db: Session = Depends(get_db)):
+def create_claim_batch(batch_in: ClaimBatchCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     created_claims = []
     for claim_in in batch_in.claims:
         db_claim = Claim(
@@ -123,7 +124,9 @@ def evaluate_claim(claim_id: int, db: Session = Depends(get_db)):
     return val_result
 
 @router.post("/{claim_id}/decision", response_model=ReviewDecisionResponse)
-def record_decision(claim_id: int, decision_in: DecisionCreate, db: Session = Depends(get_db)):
+def record_decision(claim_id: int, decision_in: DecisionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role not in [RoleEnum.REVIEWER.value, RoleEnum.ADMIN.value]:
+        raise HTTPException(status_code=403, detail="Not authorized to perform review actions")
     claim = db.query(Claim).filter(Claim.id == claim_id).first()
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
